@@ -5,19 +5,20 @@ import (
 	"github.com/vinzmay/go-rope"
 )
 
-func main() {
+func main3() {
 	a := rope.New("Hello, 世界")
 	fmt.Println("a:", a)
 	fmt.Println("a len:", a.Len())
-	//fmt.Println("a json:", a.ToJSON())
 	a1, a2 := a.Split(7)
-	fmt.Println("a1:", a1)
-	fmt.Println("a2:", a2)
+	fmt.Println("a1:", a1.ToJSON())
+	fmt.Println("a2:", a2.ToJSON())
 	fmt.Println("a_test:", a1.Concat(a2))
 	fmt.Println("a[8]:", string(a.Index(8)))
+	fmt.Println("a[8-9]:", string(a.Report(8, 2)))
+	main2()
 }
 
-func main2() {
+func main() {
 	e := rope.New("Hello_")
 	f := rope.New("my_")
 	c := e.Concat(f)
@@ -30,17 +31,18 @@ func main2() {
 	d := g.Concat(h)
 	b := c.Concat(d)
 	a := b.Concat(nil)
-	a1, a2 := a.Split(7)
-	a3 := a.Insert(9, "abcde")
-	a4 := a.Delete(1, 2)
-	fmt.Println("a", a)
-	//fmt.Println(string(a.ToJSON()))
+	a1, a2 := a.Split(2)
+	//fmt.Println("a", a.ToJSON())
 	fmt.Println("a1", a1)
-	//fmt.Println(string(a1.ToJSON()))
+	fmt.Println("a1j", a1.ToJSON())
 	fmt.Println("a2", a2)
-	//fmt.Println(string(a2.ToJSON()))
-	fmt.Println("a3", a3)
-	fmt.Println(string(a3.ToJSON()))
-	fmt.Println("a4", a4.ToJSON())
-	fmt.Println(a4.Report(1, 20))
+	fmt.Println("a2", a2.ToJSON())
+}
+
+func main2() {
+	a := rope.New("abc")
+	a1, a2 := a.Split(1)
+	fmt.Println(a)
+	fmt.Println(a1)
+	fmt.Println(a2)
 }
