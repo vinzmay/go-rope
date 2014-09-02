@@ -8,11 +8,12 @@ package rope
 import (
 	"bytes"
 	"encoding/json"
+	"unicode/utf8"
 )
 
 //Rope represents a persistent rope data structure
 type Rope struct {
-	value  string
+	value  []rune
 	weight int
 	left   *Rope
 	right  *Rope
@@ -20,7 +21,7 @@ type Rope struct {
 
 //New returns a new rope initialized with given string
 func New(bootstrap string) *Rope {
-	return &Rope{value: bootstrap, weight: len(bootstrap)}
+	return &Rope{value: []rune(bootstrap), weight: utf8.RuneCountInString(bootstrap)}
 }
 
 //Len returns the length of the rope underlying string
@@ -46,7 +47,7 @@ func (rope *Rope) String() string {
 
 //Internal struct for generating JSON
 type ropeForJSON struct {
-	Value  string
+	Value  []rune
 	Weight int
 	Left   *ropeForJSON
 	Right  *ropeForJSON
@@ -75,7 +76,7 @@ func (rope *Rope) ToJSON() string {
 }
 
 //Index retrieves the byte at rope position idx (1-based)
-func (rope *Rope) Index(idx int) byte {
+func (rope *Rope) Index(idx int) rune {
 	if idx > rope.weight {
 		return rope.right.Index(idx - rope.weight)
 	} else if rope.left != nil {
@@ -176,25 +177,36 @@ func (rope *Rope) Delete(idx int, len int) *Rope {
 
 //Report return a substring of the rope starting from idx included (1-based)
 //for len bytes
-func (rope *Rope) Report(idx int, len int) string {
+func (rope *Rope) Report(idx int, lenght int) []rune {
 	//if idx > rope.weight we go right with modified idx
 	if idx > rope.weight {
-		return rope.right.Report(idx-rope.weight, len)
+		return rope.right.Report(idx-rope.weight, lenght)
 	} else {
 		//if idx <= rope.weight we check if the left branch
 		//has enough values to fetch report, else we split
-		if rope.weight >= idx+len-1 {
+		if rope.weight >= idx+lenght-1 {
 			//we have enough space, just go left (if there is a left!)
 			if rope.left != nil {
-				return rope.left.Report(idx, len)
+				return rope.left.Report(idx, lenght)
 			} else {
 				//we're in a leaf, fetch from here
-				return rope.value[idx-1 : idx+len-1]
+				return rope.value[idx-1 : idx+lenght-1]
 			}
 		} else {
 			//merge
-			return rope.left.Report(idx, rope.weight-idx+1) +
-				rope.right.Report(1, len-rope.weight+idx-1)
+			l := rope.left.Report(idx, rope.weight-idx+1)
+			r := rope.right.Report(1, lenght-rope.weight+idx-1)
+			s := make([]rune, len(l)+len(r))
+			for i := 0; i < len(l); i++ {
+				s[i] = l[i]
+			}
+
+			for i := 0; i < len(r); i++ {
+				s[i+len(l)] = r[i]
+			}
+
+			return s
+
 		}
 	}
 }

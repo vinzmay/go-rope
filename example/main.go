@@ -10,10 +10,11 @@ func main() {
 	fmt.Println("a:", a)
 	fmt.Println("a len:", a.Len())
 	//fmt.Println("a json:", a.ToJSON())
-	a1, a2 := a.Split(9)
+	a1, a2 := a.Split(7)
 	fmt.Println("a1:", a1)
 	fmt.Println("a2:", a2)
 	fmt.Println("a_test:", a1.Concat(a2))
+	fmt.Println("a[8]:", string(a.Index(8)))
 }
 
 func main2() {
