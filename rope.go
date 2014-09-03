@@ -1,7 +1,7 @@
 //Package rope implements a persistent rope-like data structure.
 //Persistent means that every operation does not modify the original
 //objects.
-//Refer to README.md for further information
+//Refer to README.md for further information.
 
 package rope
 
@@ -128,11 +128,7 @@ func (rope *Rope) split(idx int, secondRope *Rope) (*Rope, *Rope) {
 	} else if idx > rope.weight {
 		//We have to recurse on right side.
 		newRight, secondRope := rope.right.split(idx-rope.weight, secondRope)
-		return &Rope{
-			weight: rope.weight,
-			left:   rope.left,
-			right:  newRight,
-		}, secondRope
+		return rope.left.Concat(newRight), secondRope
 	} else {
 		//idx < rope.weight, we recurse on the left side
 		if rope.isLeaf() {
@@ -158,8 +154,8 @@ func (rope *Rope) split(idx int, secondRope *Rope) (*Rope, *Rope) {
 	}
 }
 
-//Split generates two strings starting from one,
-//splitting it at input index (1-based)
+//Split generates two strings starting from one, splitting it at index (1-based).
+//Indexes out of bound are handled gracefully.
 func (rope *Rope) Split(idx int) (firstRope *Rope, secondRope *Rope) {
 	if rope == nil {
 		return nil, nil
@@ -174,8 +170,8 @@ func (rope *Rope) Split(idx int) (firstRope *Rope, secondRope *Rope) {
 	return rope.split(idx, secondRope)
 }
 
-//Insert generates a new rope inserting a string into the
-//original rope.
+//Insert generates a new rope inserting a string into the original rope.
+//Indexes out of bound are handled gracefully.
 func (rope *Rope) Insert(idx int, str string) *Rope {
 	if rope == nil {
 		return New(str)
@@ -192,15 +188,15 @@ func (rope *Rope) Insert(idx int, str string) *Rope {
 	return r1.Concat(New(str)).Concat(r2)
 }
 
-//Delete generates a new rope by deleting len characters
-//from the original one starting at character idx
+//Delete generates a new rope by deleting from
+//the original one starting at character idx.
 func (rope *Rope) Delete(idx int, length int) *Rope {
 	r1, r2 := rope.Split(idx - 1)
 	_, r4 := r2.Split(length)
 	return r1.Concat(r4)
 }
 
-//Report return a substring of the rope starting from idx included (1-based)
+//Report return a substring of the rope starting from idx included (1-based).
 func (rope *Rope) Report(idx int, length int) string {
 	if rope == nil || idx > rope.length || length < 1 {
 		return ""
@@ -238,6 +234,7 @@ func (rope *Rope) internalReport(idx int, length int, res []rune) {
 	}
 }
 
+//Substr returns part of the rope, starting at index
 func (rope *Rope) Substr(idx int, length int) *Rope {
 	if rope == nil || idx > rope.length || length < 1 {
 		return nil

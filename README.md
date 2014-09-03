@@ -61,3 +61,11 @@ Examples
 	
 	r2 := r1.Insert(3, "xxx") // "abcxxxdef"
 ```
+
+## Rope substring
+
+```go
+	r1 := rope.New("abcdef")
+	
+	r2 := r1.Substr(3, 2) // "cd"
+```

@@ -32,15 +32,15 @@ func main() {
 	d := g.Concat(h)
 	b := c.Concat(d)
 	a := b.Concat(nil)
-	//a1, a2 := a.Split(0)
+	a1, a2 := a.Split(13)
 	//fmt.Println("a", a.ToJSON())
-	//fmt.Println("a1", a1)
-	//fmt.Println("a1j", a1.ToJSON())
-	//fmt.Println("a2", a2)
-	//fmt.Println("a2", a2.ToJSON())
-	fmt.Println("a", a)
+	fmt.Println("a1", a1)
+	fmt.Println("a1j", a1.ToJSON())
+	fmt.Println("a2", a2)
+	fmt.Println("a2j", a2.ToJSON())
+	/*fmt.Println("a", a)
 	fmt.Println(a.Report(2, 4))
-	fmt.Println(a.Substr(2, 4))
+	fmt.Println(a.Substr(2, 4))*/
 }
 
 func main2() {
