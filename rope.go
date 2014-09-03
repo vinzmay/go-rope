@@ -1,17 +1,13 @@
-//Package rope implements a persistent rope-like data structure.
-//Persistent means that every operation does not modify the original
-//objects.
-//Refer to README.md for further information.
-
 package rope
 
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"unicode/utf8"
 )
 
-//Rope represents a persistent rope data structure
+//Rope represents a persistent rope data structure.
 type Rope struct {
 	value  []rune
 	weight int
@@ -20,12 +16,19 @@ type Rope struct {
 	right  *Rope
 }
 
-//isLeaf returns true if the rope is a leaf
+//isLeaf returns true if the rope is a leaf.
 func (rope *Rope) isLeaf() bool {
 	return rope.left == nil
 }
 
-//New returns a new rope initialized with given string
+//panics if rope is nil
+func (rope *Rope) panicIfNil() {
+	if rope == nil {
+		panic(fmt.Sprintf("Operation not permitted on empty rope"))
+	}
+}
+
+//New returns a new rope initialized with given string.
 func New(bootstrap string) *Rope {
 	len := utf8.RuneCountInString(bootstrap)
 	return &Rope{
@@ -34,7 +37,7 @@ func New(bootstrap string) *Rope {
 		length: len}
 }
 
-//Len returns the length of the rope underlying string
+//Len returns the length of the rope.
 func (rope *Rope) Len() int {
 	if rope == nil {
 		return 0
@@ -42,7 +45,7 @@ func (rope *Rope) Len() int {
 	return rope.length
 }
 
-//String returns the complete string stored in the rope
+//String returns the complete string stored in the rope.
 func (rope *Rope) String() string {
 	return rope.Report(1, rope.length)
 }
@@ -56,7 +59,7 @@ type ropeForJSON struct {
 	Right  *ropeForJSON
 }
 
-//Utility function that transforms a *Rope in a *ropeForJSON
+//Utility function that transforms a *Rope in a *ropeForJSON.
 func (rope *Rope) toRopeForJSON() *ropeForJSON {
 	if rope == nil {
 		return nil
@@ -70,7 +73,7 @@ func (rope *Rope) toRopeForJSON() *ropeForJSON {
 	}
 }
 
-//ToJSON converts a rope to indented JSON
+//ToJSON converts a rope to indented JSON.
 func (rope *Rope) ToJSON() string {
 	rope2 := rope.toRopeForJSON()
 	var out bytes.Buffer
@@ -79,8 +82,12 @@ func (rope *Rope) ToJSON() string {
 	return string(out.Bytes())
 }
 
-//Index retrieves the rune at rope position idx (1-based)
+//Index retrieves the rune at index.
 func (rope *Rope) Index(idx int) rune {
+	if idx < 1 || idx > rope.length {
+		panic(fmt.Sprintf("Rope - Index out of bounds %d/%d", idx, rope.length))
+	}
+
 	if rope.isLeaf() {
 		return rope.value[idx-1]
 	} else if idx > rope.weight {
@@ -90,7 +97,7 @@ func (rope *Rope) Index(idx int) rune {
 	}
 }
 
-//Concat merges two ropes and generates a brand new one
+//Concat merges two ropes.
 func (rope *Rope) Concat(other *Rope) *Rope {
 	//Special case: if the first rope is nil, just return the second rope
 	if rope == nil {
@@ -111,7 +118,6 @@ func (rope *Rope) Concat(other *Rope) *Rope {
 }
 
 //Internal function used by Split function.
-//It accepts idx to split (1-based) and actual secondRope
 func (rope *Rope) split(idx int, secondRope *Rope) (*Rope, *Rope) {
 	//If idx is equal to rope weight, we're arrived:
 	//- If is leaf, return it;
@@ -154,33 +160,20 @@ func (rope *Rope) split(idx int, secondRope *Rope) (*Rope, *Rope) {
 	}
 }
 
-//Split generates two strings starting from one, splitting it at index (1-based).
-//Indexes out of bound are handled gracefully.
+//Split generates two strings starting from one, splitting it at  index.
 func (rope *Rope) Split(idx int) (firstRope *Rope, secondRope *Rope) {
-	if rope == nil {
-		return nil, nil
-	}
-	if idx <= 0 {
-		return rope, nil
-	}
-	if idx >= rope.length {
-		return nil, rope
+	rope.panicIfNil()
+	if idx < 0 || idx > rope.length {
+		panic(fmt.Sprintf("Rope - Split out of bounds %d/%d", idx, rope.length))
 	}
 	//Create the slices for split
 	return rope.split(idx, secondRope)
 }
 
 //Insert generates a new rope inserting a string into the original rope.
-//Indexes out of bound are handled gracefully.
 func (rope *Rope) Insert(idx int, str string) *Rope {
 	if rope == nil {
 		return New(str)
-	}
-	if idx < 0 {
-		rope.Insert(0, str)
-	}
-	if idx > rope.length {
-		rope.Insert(rope.length, str)
 	}
 	//Split rope at insert point
 	r1, r2 := rope.Split(idx)
@@ -189,23 +182,19 @@ func (rope *Rope) Insert(idx int, str string) *Rope {
 }
 
 //Delete generates a new rope by deleting from
-//the original one starting at character idx.
+//the original one starting at  idx.
 func (rope *Rope) Delete(idx int, length int) *Rope {
+	rope.panicIfNil()
+
 	r1, r2 := rope.Split(idx - 1)
 	_, r4 := r2.Split(length)
 	return r1.Concat(r4)
 }
 
-//Report return a substring of the rope starting from idx included (1-based).
+//Report return a substring of the rope starting from index included.
 func (rope *Rope) Report(idx int, length int) string {
-	if rope == nil || idx > rope.length || length < 1 {
+	if rope == nil {
 		return ""
-	}
-	if idx < 1 {
-		rope.Report(1, length)
-	}
-	if idx+length-1 > rope.length {
-		rope.Report(idx, rope.length-idx+1)
 	}
 	res := make([]rune, length)
 	rope.internalReport(idx, length, res)
@@ -234,11 +223,8 @@ func (rope *Rope) internalReport(idx int, length int, res []rune) {
 	}
 }
 
-//Substr returns part of the rope, starting at index
+//Substr returns part of the rope, starting at index.
 func (rope *Rope) Substr(idx int, length int) *Rope {
-	if rope == nil || idx > rope.length || length < 1 {
-		return nil
-	}
 	if idx < 1 {
 		rope.Report(1, length)
 	}
