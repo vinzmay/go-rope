@@ -36,7 +36,4 @@ func TestRopeSplit(t *testing.T) {
 	if r.String() != "abcdef" || r1.String() != "abcd" || r2.String() != "ef" {
 		t.Error("Error splitting string: abcd/ef => ", r1, r2)
 	}
-	rb := New("123")
-	r3 := r.Concat(r).Concat(r)
-	r4, r5
 }
