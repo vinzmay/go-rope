@@ -70,7 +70,7 @@ func (rope *Rope) toRopeForJSON() *ropeForJSON {
 	}
 }
 
-//ToJSON generates a indented JSON rope conversion
+//ToJSON converts a rope to indented JSON
 func (rope *Rope) ToJSON() string {
 	rope2 := rope.toRopeForJSON()
 	var out bytes.Buffer
@@ -111,11 +111,8 @@ func (rope *Rope) Concat(other *Rope) *Rope {
 }
 
 //Internal function used by Split function.
-//It accepts idx to split (1-based), a slice for the rope parts
-//to be used for the second rope, a slice for the rope whose weight
-//must be updated, and a slice to record weights to remove
-func (rope *Rope) split(idx int,
-	secondRope *Rope) (*Rope, *Rope) {
+//It accepts idx to split (1-based) and actual secondRope
+func (rope *Rope) split(idx int, secondRope *Rope) (*Rope, *Rope) {
 	//If idx is equal to rope weight, we're arrived:
 	//- If is leaf, return it;
 	//- Otherwise, return its left rope.
