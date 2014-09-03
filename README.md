@@ -15,6 +15,9 @@ Package can be installed with go command:
 
 	go get github.com/vinzmay/go-rope
 	
+Package documentation
+---------------------
+[![GoDoc](https://godoc.org/github.com/vinzmay/go-rope?status.svg)](https://godoc.org/github.com/vinzmay/go-rope)
 
 Examples
 --------
