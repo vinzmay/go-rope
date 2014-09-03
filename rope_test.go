@@ -28,3 +28,15 @@ func TestRopeConcat(t *testing.T) {
 		t.Error("Error concatenating ropes, r3 not correct:", r3, "!= abcdefghilmno")
 	}
 }
+
+//Test rope split
+func TestRopeSplit(t *testing.T) {
+	r := New("abcdef")
+	r1, r2 := r.Split(4)
+	if r.String() != "abcdef" || r1.String() != "abcd" || r2.String() != "ef" {
+		t.Error("Error splitting string: abcd/ef => ", r1, r2)
+	}
+	rb := New("123")
+	r3 := r.Concat(r).Concat(r)
+	r4, r5
+}

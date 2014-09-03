@@ -8,7 +8,6 @@ package rope
 import (
 	"bytes"
 	"encoding/json"
-	_ "fmt"
 	"unicode/utf8"
 )
 
@@ -21,16 +20,18 @@ type Rope struct {
 	right  *Rope
 }
 
+//isLeaf returns true if the rope is a leaf
 func (rope *Rope) isLeaf() bool {
 	return rope.left == nil
 }
 
 //New returns a new rope initialized with given string
 func New(bootstrap string) *Rope {
+	len := utf8.RuneCountInString(bootstrap)
 	return &Rope{
 		value:  []rune(bootstrap),
-		weight: utf8.RuneCountInString(bootstrap),
-		length: len([]rune(bootstrap))}
+		weight: len,
+		length: len}
 }
 
 //Len returns the length of the rope underlying string
@@ -43,15 +44,7 @@ func (rope *Rope) Len() int {
 
 //String returns the complete string stored in the rope
 func (rope *Rope) String() string {
-	if rope.isLeaf() {
-		return string(rope.value)
-	}
-	s1 := rope.left.String()
-	if rope.right != nil {
-		return s1 + rope.right.String()
-	} else {
-		return s1
-	}
+	return rope.Report(1, rope.length)
 }
 
 //Internal struct for generating JSON
@@ -86,12 +79,12 @@ func (rope *Rope) ToJSON() string {
 	return string(out.Bytes())
 }
 
-//Index retrieves the byte at rope position idx (1-based)
+//Index retrieves the rune at rope position idx (1-based)
 func (rope *Rope) Index(idx int) rune {
-	if idx > rope.weight {
-		return rope.right.Index(idx - rope.weight)
-	} else if rope.isLeaf() {
+	if rope.isLeaf() {
 		return rope.value[idx-1]
+	} else if idx > rope.weight {
+		return rope.right.Index(idx - rope.weight)
 	} else {
 		return rope.left.Index(idx)
 	}
@@ -108,10 +101,10 @@ func (rope *Rope) Concat(other *Rope) *Rope {
 		return rope
 	}
 	//Return a new rope with 'rope' and 'other' assigned respectively
-	//to left and right subropes. Weight is the len of left rope.
+	//to left and right subropes.
 	return &Rope{
 		weight: rope.Len(),
-		length: rope.length + other.length,
+		length: rope.Len() + other.Len(),
 		left:   rope,
 		right:  other,
 	}
@@ -136,90 +129,130 @@ func (rope *Rope) split(idx int,
 		}
 		return r, rope.right
 	} else if idx > rope.weight {
-		//We have to go right, call the function on right side with appropriate index.
-		//Builds the rope and pass it up the stack with the other parameters.
+		//We have to recurse on right side.
 		newRight, secondRope := rope.right.split(idx-rope.weight, secondRope)
 		return &Rope{
 			weight: rope.weight,
 			left:   rope.left,
 			right:  newRight,
 		}, secondRope
-	} else if rope.isLeaf() { //idx < rope.weight, go left!
-		//It's a leaf: we have to create a new rope by splitting leaf at index
-		return &Rope{
-				weight: idx,
-				value:  rope.value[0:idx],
-				length: idx,
-			}, secondRope.Concat(&Rope{
+	} else {
+		//idx < rope.weight, we recurse on the left side
+		if rope.isLeaf() {
+			//It's a leaf: we have to create a new rope by splitting leaf at index
+			var lr *Rope
+			if idx > 0 {
+				lr = &Rope{
+					weight: idx,
+					value:  rope.value[0:idx],
+					length: idx,
+				}
+			}
+			secondRope = &Rope{
 				weight: len(rope.value) - idx,
 				value:  rope.value[idx:len(rope.value)],
 				length: len(rope.value) - idx,
-			})
-	} else {
-		newLeft, secondRope := rope.left.split(idx, secondRope)
-		return newLeft, secondRope.Concat(rope.right)
+			}
+			return lr, secondRope
+		} else {
+			newLeft, secondRope := rope.left.split(idx, secondRope)
+			return newLeft, secondRope.Concat(rope.right)
+		}
 	}
 }
 
 //Split generates two strings starting from one,
 //splitting it at input index (1-based)
 func (rope *Rope) Split(idx int) (firstRope *Rope, secondRope *Rope) {
+	if rope == nil {
+		return nil, nil
+	}
+	if idx <= 0 {
+		return rope, nil
+	}
+	if idx >= rope.length {
+		return nil, rope
+	}
 	//Create the slices for split
 	return rope.split(idx, secondRope)
 }
 
 //Insert generates a new rope inserting a string into the
-//original rope
-func (rope *Rope) Insert(idx int, s string) *Rope {
+//original rope.
+func (rope *Rope) Insert(idx int, str string) *Rope {
+	if rope == nil {
+		return New(str)
+	}
+	if idx < 0 {
+		rope.Insert(0, str)
+	}
+	if idx > rope.length {
+		rope.Insert(rope.length, str)
+	}
 	//Split rope at insert point
 	r1, r2 := rope.Split(idx)
 	//Rejoin the two split parts with string to insert as middle rope
-	return r1.Concat(New(s)).Concat(r2)
+	return r1.Concat(New(str)).Concat(r2)
 }
 
 //Delete generates a new rope by deleting len characters
 //from the original one starting at character idx
-func (rope *Rope) Delete(idx int, len int) *Rope {
+func (rope *Rope) Delete(idx int, length int) *Rope {
 	r1, r2 := rope.Split(idx - 1)
-	_, r4 := r2.Split(len)
+	_, r4 := r2.Split(length)
 	return r1.Concat(r4)
 }
 
 //Report return a substring of the rope starting from idx included (1-based)
-//for len runes
 func (rope *Rope) Report(idx int, length int) string {
-	return string(rope.internalReport(idx, length))
+	if rope == nil || idx > rope.length || length < 1 {
+		return ""
+	}
+	if idx < 1 {
+		rope.Report(1, length)
+	}
+	if idx+length-1 > rope.length {
+		rope.Report(idx, rope.length-idx+1)
+	}
+	res := make([]rune, length)
+	rope.internalReport(idx, length, res)
+	return string(res)
 }
 
-func (rope *Rope) internalReport(idx int, length int) []rune {
+func (rope *Rope) internalReport(idx int, length int, res []rune) {
 	//if idx > rope.weight we go right with modified idx
 	if idx > rope.weight {
-		return rope.right.internalReport(idx-rope.weight, length)
+		rope.right.internalReport(idx-rope.weight, length, res)
 	} else
 	//if idx <= rope.weight we check if the left branch
 	//has enough values to fetch report, else we split
 	if rope.weight >= idx+length-1 {
-		//we have enough space, just go left (if there is a left!)
-		if !rope.isLeaf() {
-			return rope.left.internalReport(idx, length)
-		} else {
+		//we have enough space, just go left or take the string
+		if rope.isLeaf() {
 			//we're in a leaf, fetch from here
-			return rope.value[idx-1 : idx+length-1]
+			copy(res, rope.value[idx-1:idx+length-1])
+		} else {
+			rope.left.internalReport(idx, length, res)
 		}
 	} else {
-		//Split the work and then merge both parts
-		l := rope.left.internalReport(idx, rope.weight-idx+1)
-		r := rope.right.internalReport(1, length-rope.weight+idx-1)
-		s := make([]rune, len(l)+len(r))
-		for i := 0; i < len(l); i++ {
-			s[i] = l[i]
-		}
-
-		for i := 0; i < len(r); i++ {
-			s[i+len(l)] = r[i]
-		}
-
-		return s
-
+		//Split the work
+		rope.left.internalReport(idx, rope.weight-idx+1, res[:rope.weight])
+		rope.right.internalReport(1, length-rope.weight+idx-1, res[rope.weight:])
 	}
+}
+
+func (rope *Rope) Substr(idx int, length int) *Rope {
+	if rope == nil || idx > rope.length || length < 1 {
+		return nil
+	}
+	if idx < 1 {
+		rope.Report(1, length)
+	}
+	if idx+length-1 > rope.length {
+		rope.Report(idx, rope.length-idx+1)
+	}
+
+	_, r1 := rope.Split(idx - 1)
+	r2, _ := r1.Split(length)
+	return r2
 }
